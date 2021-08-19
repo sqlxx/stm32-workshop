@@ -1,0 +1,22 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "debug",
+            "type": "cortex-debug",
+            "executable": "${workspaceRoot}/build/${workspaceFolderBasename}.elf",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "build",
+            "servertype": "openocd",
+            "svdFile": "/Users/sqlxx/Projects/mcu/stm32/svd/STM32F103xx.svd",
+            "configFiles": [
+                "board/st_nucleo_f103rb.cfg"
+            ],
+            "armToolchainPath": "/Users/sqlxx/Softwares/arm/bin"
+        }
+    ]
+}
