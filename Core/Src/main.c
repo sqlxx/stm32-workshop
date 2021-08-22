@@ -94,14 +94,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET) {
-      // int i = 0;
-      while(1) {
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        HAL_Delay(1000);
-        // i ++;
-      }
-    }
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
