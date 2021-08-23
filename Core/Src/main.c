@@ -16,6 +16,7 @@
   *
   ******************************************************************************
   */
+ #include <stdio.h>
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -119,7 +120,7 @@ int main(void)
   }
 
   uint16_t dutyCycle = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1);
-  printf("%s", dutyCycle);
+  printf("%d", dutyCycle);
   /* USER CODE END 2 */
 
   /* Infinite loop */
