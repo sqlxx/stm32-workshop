@@ -140,10 +140,11 @@ int main(void)
       __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, --dutyCycle);
       HAL_Delay(1);
     }
+    printf("Cycle complete");
     /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
   }
+    /* USER CODE BEGIN 3 */
   /* USER CODE END 3 */
 }
 
