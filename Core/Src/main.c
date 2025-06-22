@@ -77,7 +77,7 @@ int Button_Clicked(GPIO_TypeDef *Gpiox, uint16_t GPIO_Pin) {
 
 void LCD_reset() {
   HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_RESET);
-  HAL_Delay(1);
+  HAL_Delay(100);
   HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_SET);
 }
 
