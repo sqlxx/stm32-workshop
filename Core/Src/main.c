@@ -90,6 +90,19 @@ void Blink_LED(uint8_t time) {
     } 
 }
 
+void Send_SPI_Data() {
+  uint8_t txData[] = {0x29, 0x00, 0x21};
+
+  HAL_GPIO_WritePin(LCD_A0_GPIO_Port, LCD_A0_Pin, GPIO_PIN_RESET);
+  HAL_Delay(100);
+
+  if(HAL_SPI_Transmit(&hspi2, txData, sizeof(txData), 200) != HAL_OK)
+  {
+    // 处理错误
+    Error_Handler();
+  }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -131,8 +144,12 @@ int main(void)
     Blink_LED(2);
   }
 
+
+
+
   uint16_t dutyCycle = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_2);
   printf("The duty code is %d", dutyCycle);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -142,15 +159,16 @@ int main(void)
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
       LCD_reset();
     }
-
+    Send_SPI_Data();
+    HAL_Delay(1000);  // 每秒发送一次
     // while(dutyCycle < __HAL_TIM_GET_AUTORELOAD(&htim2)) {
-      // __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);
-      // HAL_Delay(1);
+    //   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);
+    //   HAL_Delay(1);
     // }
 
     // while(dutyCycle > 0) {
-      // __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, --dutyCycle);
-      // HAL_Delay(1);
+    //   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, --dutyCycle);
+    //   HAL_Delay(1);
     // }
     printf("Cycle complete");
   }
@@ -208,7 +226,6 @@ static void MX_SPI2_Init(void)
 {
 
   /* USER CODE BEGIN SPI2_Init 0 */
-
   /* USER CODE END SPI2_Init 0 */
 
   /* USER CODE BEGIN SPI2_Init 1 */

@@ -1,6 +1,7 @@
 {
     "files.associations": {
-        "rte_components.h": "c",
-        "main.h": "c"
+      "rte_components.h": "c",
+      "main.h": "c",
+      "*.tcc": "c"
     }
 }
