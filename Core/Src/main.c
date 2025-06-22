@@ -75,6 +75,12 @@ int Button_Clicked(GPIO_TypeDef *Gpiox, uint16_t GPIO_Pin) {
   return 0;
 }
 
+void LCD_reset() {
+  HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_RESET);
+  HAL_Delay(1);
+  HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_SET);
+}
+
 void Blink_LED(uint8_t time) {
      while(time--) {
       HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -103,6 +109,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  LCD_reset();
 
   /* USER CODE END Init */
 
@@ -133,18 +140,18 @@ int main(void)
   while (1)
   {
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
-      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      LCD_reset();
     }
 
-    while(dutyCycle < __HAL_TIM_GET_AUTORELOAD(&htim2)) {
-      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);
-      HAL_Delay(1);
-    }
+    // while(dutyCycle < __HAL_TIM_GET_AUTORELOAD(&htim2)) {
+      // __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);
+      // HAL_Delay(1);
+    // }
 
-    while(dutyCycle > 0) {
-      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, --dutyCycle);
-      HAL_Delay(1);
-    }
+    // while(dutyCycle > 0) {
+      // __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, --dutyCycle);
+      // HAL_Delay(1);
+    // }
     printf("Cycle complete");
   }
     /* USER CODE END WHILE */
@@ -165,12 +172,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
