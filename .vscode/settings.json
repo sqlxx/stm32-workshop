@@ -5,6 +5,7 @@
       "main.h": "c",
       "stm32f1xx_hal.h": "c",
       "lcd.h": "c",
-      "*.tcc": "c"
+      "*.tcc": "c",
+      "cstdint": "cpp"
     }
 }

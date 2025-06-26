@@ -20,7 +20,8 @@ extern SPI_HandleTypeDef SPI_HANDLE;
 
 void LCD_Hard_Reset(); 
 void LCD_Send_Cmd(uint8_t cmd);
-void LCD_Send_Data(uint8_t *data);
+void LCD_Send_Data(uint8_t *data, size_t size);
+void LCD_Init();
 
 #ifdef __cplusplus
 }

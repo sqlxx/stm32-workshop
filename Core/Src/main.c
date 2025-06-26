@@ -84,19 +84,6 @@ void Blink_LED(uint8_t time) {
     } 
 }
 
-void Send_SPI_Data() {
-  uint8_t txData[] = {0x29, 0x00, 0x21};
-
-  HAL_GPIO_WritePin(LCD_A0_GPIO_Port, LCD_A0_Pin, GPIO_PIN_RESET);
-  HAL_Delay(100);
-
-  if(HAL_SPI_Transmit(&hspi2, txData, sizeof(txData), 200) != HAL_OK)
-  {
-    // 处理错误
-    Error_Handler();
-  }
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -132,7 +119,8 @@ int main(void)
   MX_SPI2_Init();
 
   /* USER CODE BEGIN 2 */
-  lcd_hard_reset();
+  LCD_Hard_Reset();
+
 
   if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2) != HAL_OK) {
     Blink_LED(4);
@@ -140,21 +128,39 @@ int main(void)
     Blink_LED(2);
   }
 
+  LCD_Init();
+  Blink_LED(3);
+  // HAL_Delay(5000);
 
+  // LCD_Send_Cmd(0x21); //invert color for testing
 
-
-  uint16_t dutyCycle = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  
+  uint8_t i = 0;
+
+  LCD_Send_Cmd(0x2C);  // ST7789/ILI9341 的 "写入显存" 命令
+
+  // 发送颜色值（16位 RGB565）
+  for (int i = 0; i < 240 * 320; i++) {
+    LCD_Send_Data((uint8_t[]){0xF8, 0x00}, 2);  
+  }
   while (1)
   {
+
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
-      lcd_hard_reset();
+      if (i%2) {
+        Blink_LED(2);
+        LCD_Send_Cmd(0x21);
+      } else {
+        Blink_LED(1);
+        LCD_Send_Cmd(0x20);
+      }
+      i++;
     }
-    Send_SPI_Data();
-    HAL_Delay(1000);  // 每秒发送一次
+    HAL_Delay(100);  // 每秒发送一次
     // while(dutyCycle < __HAL_TIM_GET_AUTORELOAD(&htim2)) {
     //   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);
     //   HAL_Delay(1);
@@ -164,7 +170,6 @@ int main(void)
     //   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, --dutyCycle);
     //   HAL_Delay(1);
     // }
-    printf("Cycle complete");
   }
     /* USER CODE END WHILE */
 
