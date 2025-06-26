@@ -1,0 +1,34 @@
+#include "lcd.h"
+
+void LCD_Hard_Reset() {
+  
+  HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_RESET);
+  HAL_Delay(10);
+  HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_SET);
+  HAL_Delay(120);
+
+}
+
+void LCD_Send_Cmd(uint8_t cmd) {
+  LCD_MODE_CMD();
+  HAL_SPI_Transmit(&SPI_HANDLE, &cmd, 1, 1000);
+}
+
+void LCD_Send_Data(uint8_t *data) {
+  LCD_MODE_DATA();
+  HAL_SPI_Transmit(&SPI_HANDLE, data, sizeof(data), 1000);
+}
+
+void LCD_Init() {
+
+  LCD_Send_Cmd(0x3A);
+  LCD_Send_Data(0x55); // 设置成RGB565格式，默认为RGB666
+
+  // 退出睡眠模式
+  LCD_Send_Cmd(0x11);
+  HAL_Delay(120); // 手册要求至少等待5ms才能发送下一个命令，如果接下去是Sleep Mode(0x10)命令，则需要等待120ms，为保险这里直接等待120ms
+
+  // 开启显示
+  LCD_Send_Cmd(0x29);
+
+}
