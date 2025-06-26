@@ -6,6 +6,7 @@
       "stm32f1xx_hal.h": "c",
       "lcd.h": "c",
       "*.tcc": "c",
-      "cstdint": "cpp"
+      "cstdint": "cpp",
+      "cstdlib": "c"
     }
 }

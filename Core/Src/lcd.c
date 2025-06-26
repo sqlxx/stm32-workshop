@@ -3,7 +3,7 @@
 void LCD_Hard_Reset() {
   
   HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_RESET);
-  HAL_Delay(120);
+  HAL_Delay(20);
   HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_SET);
   HAL_Delay(120);
 

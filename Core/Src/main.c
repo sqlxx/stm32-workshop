@@ -129,7 +129,6 @@ int main(void)
   }
 
   LCD_Init();
-  Blink_LED(3);
   // HAL_Delay(5000);
 
   // LCD_Send_Cmd(0x21); //invert color for testing
@@ -143,10 +142,18 @@ int main(void)
 
   LCD_Send_Cmd(0x2C);  // ST7789/ILI9341 的 "写入显存" 命令
 
+  // uint8_t color[240*320*2];
   // 发送颜色值（16位 RGB565）
-  for (int i = 0; i < 240 * 320; i++) {
-    LCD_Send_Data((uint8_t[]){0xF8, 0x00}, 2);  
+  // for (int i = 0; i < 240 * 320; i++) {
+  //   color[i++] = 0xF8;
+  //   color[i] = 0x00;
+  // }
+  uint8_t red_pixels[] = {0xF8, 0x00, 0xF8, 0x00};
+  for (int i = 0; i < 38400; i++ ) {
+    // LCD_Send_Data(red_pixels, 4);  
+    LCD_Send_Data((uint8_t[]){0xF8, 0x00, 0xF8, 0x00}, 4);  
   }
+  // LCD_Send_Data(color, 2*240*320);  
   while (1)
   {
 
