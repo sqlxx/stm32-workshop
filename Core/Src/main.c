@@ -16,13 +16,13 @@
   *
   ******************************************************************************
   */
- #include <stdio.h>
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "lcd.h"
 
 /* USER CODE END Includes */
 
@@ -75,12 +75,6 @@ int Button_Clicked(GPIO_TypeDef *Gpiox, uint16_t GPIO_Pin) {
   return 0;
 }
 
-void LCD_reset() {
-  HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_RESET);
-  HAL_Delay(100);
-  HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_SET);
-}
-
 void Blink_LED(uint8_t time) {
      while(time--) {
       HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -122,7 +116,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  LCD_reset();
 
   /* USER CODE END Init */
 
@@ -137,7 +130,10 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_SPI2_Init();
+
   /* USER CODE BEGIN 2 */
+  lcd_hard_reset();
+
   if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2) != HAL_OK) {
     Blink_LED(4);
   } else {
@@ -148,8 +144,6 @@ int main(void)
 
 
   uint16_t dutyCycle = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_2);
-  printf("The duty code is %d", dutyCycle);
-  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -157,7 +151,7 @@ int main(void)
   while (1)
   {
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
-      LCD_reset();
+      lcd_hard_reset();
     }
     Send_SPI_Data();
     HAL_Delay(1000);  // 每秒发送一次
