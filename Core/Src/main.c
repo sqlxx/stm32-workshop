@@ -117,7 +117,6 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_SPI2_Init();
-
   /* USER CODE BEGIN 2 */
   LCD_Hard_Reset();
 
@@ -139,35 +138,37 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   
   uint8_t i = 0;
-
-  LCD_Send_Cmd(0x2C);  // ST7789/ILI9341 的 "写入显存" 命令
-
-  // uint8_t color[240*320*2];
-  // 发送颜色值（16位 RGB565）
-  // for (int i = 0; i < 240 * 320; i++) {
-  //   color[i++] = 0xF8;
-  //   color[i] = 0x00;
-  // }
-  uint8_t red_pixels[] = {0xF8, 0x00, 0xF8, 0x00};
-  for (int i = 0; i < 38400; i++ ) {
-    // LCD_Send_Data(red_pixels, 4);  
-    LCD_Send_Data((uint8_t[]){0xF8, 0x00, 0xF8, 0x00}, 4);  
-  }
-  // LCD_Send_Data(color, 2*240*320);  
+  uint16_t j = 0;
   while (1)
   {
 
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
       if (i%2) {
-        Blink_LED(2);
-        LCD_Send_Cmd(0x21);
+        // Blink_LED(2);
+        // LCD_Send_Cmd(0x21);
       } else {
-        Blink_LED(1);
-        LCD_Send_Cmd(0x20);
+        // Blink_LED(1);
+        // LCD_Send_Cmd(0x20);
       }
+      // uint8_t ch[] = { 0x00,0x00,0x10,0x10,0x18,0x28,0x28,0x24,0x3C,0x44,0x42,0x42,0xE7,0x00,0x00,0x00 };
+      // uint8_t ch[] = {     0x00, 0xC0, 0x20, 0x20, 0x20, 0xC0, 0x00, 0x00, 0x00, 0x0F, 0x10, 0x10, 0x10, 0x0F, 0x00, 0x00}; 
+      uint8_t ch[][32] = {
+        /* 0 孙 */ {0x00,0x04,0x7e,0x04,0x40,0x04,0x20,0x04,0x10,0x04,0x10,0x15,0x50,0x25,0x30,0x25,0x9c,0x44,0x93,0x44,0x50,0x44,0x10,0x04,0x10,0x04,0x10,0x04,0x14,0x05,0x08,0x02,},
+        /* 1 欣 */ {0x40,0x04,0xe0,0x04,0x1c,0x04,0x04,0x7e,0x04,0x42,0x04,0x21,0xfc,0x08,0x24,0x08,0x24,0x08,0x24,0x08,0x24,0x14,0x24,0x14,0x24,0x12,0x22,0x22,0x22,0x21,0x81,0x40,},
+        /* 2 妍 */ {0x08,0x00,0xc8,0x7f,0x08,0x11,0x08,0x11,0x3f,0x11,0x24,0x11,0x24,0x11,0xe4,0x7f,0x24,0x11,0x12,0x11,0x14,0x11,0x08,0x11,0x14,0x11,0x22,0x11,0x81,0x10,0x40,0x10,}
+        };
+      // uint8_t ch[] = { 0x80,0x80,0x40,0x40,0x20,0x20,0x10,0x10,0x08,0x08,0x04,0x04,0x02,0x02,0x01,0x01 };
+      for (int c = 0; c < 3; c++) {
+        LCD_Full_Char(j, 0, ch[c], YELLOW);
+        j = j + 20;
+      }
+
+      // LCD_Draw_Line(j, j, j, j+10,RED, 2);
+      j = j + 20; 
       i++;
     }
-    HAL_Delay(100);  // 每秒发送一次
+    HAL_Delay(10);  // 每秒发送一次
+    // LCD_Draw_Square_Dot(j, j++, RED, 10);
     // while(dutyCycle < __HAL_TIM_GET_AUTORELOAD(&htim2)) {
     //   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);
     //   HAL_Delay(1);
@@ -341,7 +342,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LCD_RST_Pin|LCD_A0_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, LCD_RST_Pin|LCD_A0_Pin|LCD_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -362,8 +363,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LCD_RST_Pin LCD_A0_Pin */
-  GPIO_InitStruct.Pin = LCD_RST_Pin|LCD_A0_Pin;
+  /*Configure GPIO pins : LCD_RST_Pin LCD_A0_Pin LCD_CS_Pin */
+  GPIO_InitStruct.Pin = LCD_RST_Pin|LCD_A0_Pin|LCD_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
