@@ -22,7 +22,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "lcd.h"
+#include "lcd_ili9341.h"
+#include "touch_xpt2046.h"
+#include "log_uart.h"
+#include "stdbool.h"
 
 /* USER CODE END Includes */
 
@@ -45,6 +48,11 @@ SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
 
+UART_HandleTypeDef huart1;
+
+bool touch_screen_pressed = false;
+
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -54,6 +62,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_SPI2_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -78,10 +87,19 @@ int Button_Clicked(GPIO_TypeDef *Gpiox, uint16_t GPIO_Pin) {
 void Blink_LED(uint8_t time) {
      while(time--) {
       HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-      HAL_Delay(1000);
+      HAL_Delay(500);
       HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-      HAL_Delay(1000);
+      HAL_Delay(500);
     } 
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+  if (GPIO_Pin == B1_Pin) {
+    log_write(LOG_LEVEL_DEBUG, "Button 1 pressed");
+  } else if (GPIO_Pin == T_PEN_INT_Pin) {
+    log_write(LOG_LEVEL_DEBUG, "Touch screen pressed");
+    touch_screen_pressed = true;
+  }
 }
 
 /* USER CODE END 0 */
@@ -117,20 +135,18 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_SPI2_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   LCD_Hard_Reset();
 
 
   if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2) != HAL_OK) {
-    Blink_LED(4);
-  } else {
     Blink_LED(2);
+  } else {
+    Blink_LED(1);
   }
 
   LCD_Init();
-  // HAL_Delay(5000);
-
-  // LCD_Send_Cmd(0x21); //invert color for testing
 
   /* USER CODE END 2 */
 
@@ -141,6 +157,13 @@ int main(void)
   uint16_t j = 0;
   while (1)
   {
+
+    if (touch_screen_pressed) {
+      uint16_t x = Touch_Read_Data(0x90);
+      uint16_t y = Touch_Read_Data(0xD0);
+      log_write(LOG_LEVEL_DEBUG, "X: %d, Y: %d", x, y);
+      touch_screen_pressed = false;
+    }
 
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
       if (i%2) {
@@ -321,6 +344,39 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -342,13 +398,16 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(T_CS_GPIO_Port, T_CS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LCD_RST_Pin|LCD_A0_Pin|LCD_CS_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pin : B1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin;
+  /*Configure GPIO pins : B1_Pin T_PEN_INT_Pin */
+  GPIO_InitStruct.Pin = B1_Pin|T_PEN_INT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : USART_TX_Pin USART_RX_Pin */
   GPIO_InitStruct.Pin = USART_TX_Pin|USART_RX_Pin;
@@ -363,6 +422,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : T_CS_Pin */
+  GPIO_InitStruct.Pin = T_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(T_CS_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LCD_RST_Pin LCD_A0_Pin LCD_CS_Pin */
   GPIO_InitStruct.Pin = LCD_RST_Pin|LCD_A0_Pin|LCD_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -371,6 +437,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 

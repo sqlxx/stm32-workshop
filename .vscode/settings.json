@@ -7,6 +7,18 @@
       "lcd.h": "c",
       "*.tcc": "c",
       "cstdint": "cpp",
-      "cstdlib": "c"
-    }
+      "cstdlib": "c",
+      "touch_xpt2046.h": "c",
+      "log_uart.h": "c"
+    },
+    "vsmqtt.brokerProfiles": [
+      {
+        "name": "pet-prod",
+        "host": "47.98.153.33",
+        "port": 1883,
+        "clientId": "sq_client",
+        "password": "2T0DxwsohhikUm3YI0Vj",
+        "username": "admin"
+      }
+    ]
 }
