@@ -139,7 +139,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LCD_Hard_Reset();
 
-
+  log_write(LOG_LEVEL_DEBUG, "System starting");
   if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2) != HAL_OK) {
     Blink_LED(2);
   } else {
