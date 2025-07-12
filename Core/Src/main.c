@@ -44,17 +44,15 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart1;
 
-bool touch_screen_pressed = false;
-
-
 /* USER CODE BEGIN PV */
-
+bool touch_screen_pressed = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -63,6 +61,7 @@ static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -97,8 +96,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   if (GPIO_Pin == B1_Pin) {
     log_write(LOG_LEVEL_DEBUG, "Button 1 pressed");
   } else if (GPIO_Pin == T_PEN_INT_Pin) {
-    log_write(LOG_LEVEL_DEBUG, "Touch screen pressed");
-    touch_screen_pressed = true;
+    if (!touch_screen_pressed) {
+      log_write(LOG_LEVEL_DEBUG, "Touch screen pressed");
+      touch_screen_pressed = true;
+    }
   }
 }
 
@@ -136,6 +137,7 @@ int main(void)
   MX_TIM2_Init();
   MX_SPI2_Init();
   MX_USART1_UART_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   LCD_Hard_Reset();
 
@@ -159,10 +161,13 @@ int main(void)
   {
 
     if (touch_screen_pressed) {
-      uint16_t x = Touch_Read_Data(0x90);
-      uint16_t y = Touch_Read_Data(0xD0);
+      uint16_t x = 0;
+      uint16_t y = 0;
+      Touch_Get_Pos(&x, &y);
       log_write(LOG_LEVEL_DEBUG, "X: %d, Y: %d", x, y);
-      touch_screen_pressed = false;
+      if (x == 4095 || y == 0) {
+        touch_screen_pressed = false;
+      }
     }
 
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
@@ -245,6 +250,44 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
 }
 
 /**

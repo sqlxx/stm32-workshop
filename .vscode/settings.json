@@ -9,7 +9,10 @@
       "cstdint": "cpp",
       "cstdlib": "c",
       "touch_xpt2046.h": "c",
-      "log_uart.h": "c"
+      "log_uart.h": "c",
+      "limits": "c",
+      "cmath": "c",
+      "type_traits": "c"
     },
     "vsmqtt.brokerProfiles": [
       {
