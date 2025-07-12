@@ -29,6 +29,7 @@ void log_write(uint8_t level, const char* format, ...) {
   len += vsnprintf(buf + len, sizeof(buf) - len, format, args);
 
   HAL_UART_Transmit(&UART_HANDLE, (uint8_t *)buf, len, 0xFFFF);
+  HAL_UART_Transmit(&UART_HANDLE, (uint8_t *)"\r\n", 2, 0xFFFF);
   va_end(args);
 
 }
