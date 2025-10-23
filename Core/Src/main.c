@@ -164,9 +164,11 @@ int main(void)
       uint16_t x = 0;
       uint16_t y = 0;
       Touch_Get_Pos(&x, &y);
-      log_write(LOG_LEVEL_DEBUG, "X: %d, Y: %d", x, y);
       if (x == 4095 || y == 0) {
         touch_screen_pressed = false;
+        log_write(LOG_LEVEL_DEBUG, "touch unpressed");
+      } else {
+        log_write(LOG_LEVEL_DEBUG, "X: %d, Y: %d", x, y);
       }
     }
 

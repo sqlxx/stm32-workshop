@@ -12,14 +12,14 @@ void LCD_Hard_Reset() {
 void LCD_Send_Cmd(uint8_t cmd) {
   LCD_CHIP_SELECT();
   LCD_MODE_CMD();
-  HAL_SPI_Transmit(&SPI_HANDLE, &cmd, 1, 1000);
+  HAL_SPI_Transmit(&LCD_SPI_HANDLE, &cmd, 1, 1000);
   LCD_CHIP_UNSELECT();
 }
 
 void LCD_Send_Data(uint8_t *data, size_t len) {
   LCD_CHIP_SELECT();
   LCD_MODE_DATA();
-  HAL_SPI_Transmit(&SPI_HANDLE, data, len, 1000);
+  HAL_SPI_Transmit(&LCD_SPI_HANDLE, data, len, 1000);
   LCD_CHIP_UNSELECT();
 }
 

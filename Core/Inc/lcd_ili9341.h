@@ -13,7 +13,7 @@
 #define LCD_A0_GPIO_Port GPIOB
 #define LCD_CS_Pin GPIO_PIN_2
 #define LCD_CS_GPIO_Port GPIOB
-#define SPI_HANDLE hspi2
+#define LCD_SPI_HANDLE hspi2
 
 
 // 常用颜色定义 (RGB565格式)
@@ -34,7 +34,7 @@
 #define LCD_BASE_WIDTH 240 
 #define LCD_BASE_HEIGHT 320
 
-#define LCD_ORIENTATION LCD_ORIENTATION_PORTRAIT
+#define LCD_ORIENTATION LCD_ORIENTATION_LANDSCAPE
 
 //默认是竖屏，所以宽度240，高度320，当横屏时，需要交换设置
 #define LCD_WIDTH (LCD_ORIENTATION == LCD_ORIENTATION_PORTRAIT ? LCD_BASE_WIDTH : LCD_BASE_HEIGHT)
@@ -46,7 +46,7 @@
 #define LCD_CHIP_SELECT() HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET)
 #define LCD_CHIP_UNSELECT() HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET)
 
-extern SPI_HandleTypeDef SPI_HANDLE;
+extern SPI_HandleTypeDef LCD_SPI_HANDLE;
 
 static const uint8_t LCD_Chars[3][16] = {
   { 0x0, 0xc0, 0x20, 0x20, 0x20, 0xc0, 0x0, 0x0, 0x0, 0xf, 0x1, 0x1, 0x1, 0xf, 0x0, 0x0 }, /* (0) A */

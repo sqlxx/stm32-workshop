@@ -10,7 +10,7 @@ uint16_t Touch_Read_Data(uint8_t cmd) {
 
   // HAL_SPI_Transmit(&SPI_HANDLE, txData, 1, 2000);
   // HAL_SPI_Receive(&SPI_HANDLE, rxData, 2, 2000);
-  HAL_SPI_TransmitReceive(&SPI_HANDLE, txData, rxData, 3, 1000);
+  HAL_SPI_TransmitReceive(&TOUCH_SPI_HANDLE, txData, rxData, 3, 1000);
 
   HAL_GPIO_WritePin(TOUCH_CS_PORT, TOUCH_CS_PIN, GPIO_PIN_SET);
   __enable_irq();

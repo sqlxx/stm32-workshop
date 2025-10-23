@@ -10,9 +10,9 @@
 #define TOUCH_CS_PIN GPIO_PIN_5
 #define TOUCH_CS_PORT GPIOC
 
-#define SPI_HANDLE hspi1
+#define TOUCH_SPI_HANDLE hspi1
 
-extern SPI_HandleTypeDef SPI_HANDLE;
+extern SPI_HandleTypeDef TOUCH_SPI_HANDLE;
 
 uint16_t Touch_Read_Data(uint8_t cmd);
 
