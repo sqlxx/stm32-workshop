@@ -183,7 +183,7 @@ static void init(lv_lcd_generic_mipi_driver_t * drv, lv_lcd_flag_t flags)
     /* init orientation */
     drv->mirror_x = flags & LV_LCD_FLAG_MIRROR_X;
     drv->mirror_y = flags & LV_LCD_FLAG_MIRROR_Y;
-    drv->swap_xy = false;
+    drv->swap_xy = true;
     /* update madctl_reg */
     set_swap_xy(drv, drv->swap_xy);
     set_mirror(drv, drv->mirror_x, drv->mirror_y);

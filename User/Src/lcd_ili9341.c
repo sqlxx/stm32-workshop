@@ -1,4 +1,5 @@
 #include "lcd_ili9341.h"
+#include "log_uart.h"
 
 void LCD_Hard_Reset() {
   
@@ -10,18 +11,25 @@ void LCD_Hard_Reset() {
 }
 
 void LCD_Send_Cmd(uint8_t cmd) {
+  LCD_Send_Cmd_MB(&cmd, 1);
+}
+
+void LCD_Send_Cmd_MB(uint8_t* cmd, size_t len) {
   LCD_CHIP_SELECT();
   LCD_MODE_CMD();
-  HAL_SPI_Transmit(&LCD_SPI_HANDLE, &cmd, 1, 1000);
+  log_write(LOG_LEVEL_DEBUG, "In LCD_Send_Cmd_MB: %d", len);
+  HAL_SPI_Transmit(&LCD_SPI_HANDLE, cmd, len, 1000);
   LCD_CHIP_UNSELECT();
 }
 
 void LCD_Send_Data(uint8_t *data, size_t len) {
   LCD_CHIP_SELECT();
   LCD_MODE_DATA();
+  log_write(LOG_LEVEL_DEBUG, "In LCD_Send_Data: %d", len);
   HAL_SPI_Transmit(&LCD_SPI_HANDLE, data, len, 1000);
   LCD_CHIP_UNSELECT();
 }
+
 
 void LCD_Clear(uint16_t color) {
   LCD_Set_Window(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);

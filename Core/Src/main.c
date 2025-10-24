@@ -106,10 +106,24 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 }
 
 void lcd_send_cmd(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, const uint8_t *param, size_t param_size) {
-
+  (void)disp;
+  log_write(LOG_LEVEL_DEBUG, "In send command: %d, %d, %02X", cmd_size, param_size, *cmd);
+  LCD_Send_Cmd_MB((uint8_t*)cmd, cmd_size); 
+  if (param_size > 0) {
+    LCD_Send_Data((uint8_t*)param, param_size);
+  }
+  log_write(LOG_LEVEL_DEBUG, "out send command");
 }
 
 void lcd_send_color(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, uint8_t *param, size_t param_size) {
+  (void)disp;
+  LCD_Send_Cmd_MB((uint8_t*)cmd, cmd_size); 
+  if (param_size > 0) {
+    log_write(LOG_LEVEL_DEBUG, "In send color: %d, %d, %02X%02X", cmd_size, param_size, param[0], param[1]);
+
+    LCD_Send_Data((uint8_t*)param, param_size);
+  }
+  lv_display_flush_ready(disp);
 
 }
 /* USER CODE END 0 */
@@ -130,7 +144,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  lv_tick_set_cb(HAL_GetTick);
 
   /* USER CODE END Init */
 
@@ -148,27 +161,45 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  // LCD_Hard_Reset();
 
-  log_write(LOG_LEVEL_DEBUG, "System starting");
   if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2) != HAL_OK) {
     Blink_LED(2);
   } else {
     Blink_LED(1);
   }
 
-  // LCD_Init();
   lv_init();
-  lv_disp_t* disp = lv_ili9341_create(LCD_WIDTH, LCD_HEIGHT, 0, lcd_send_cmd, lcd_send_color);
-  lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
+  lv_tick_set_cb(HAL_GetTick);
 
+  // 创建LVGL显示设备
+  lv_disp_t* disp = lv_ili9341_create(320, 240, LV_LCD_FLAG_MIRROR_X|LV_LCD_FLAG_BGR, lcd_send_cmd, lcd_send_color);
+  if (disp == NULL) {
+    log_write(LOG_LEVEL_ERROR, "LVGL display initialization failed");
+    Blink_LED(5);
+  } else {
+    log_write(LOG_LEVEL_DEBUG, "LVGL display initialized successfully");
+  }
+
+  static uint8_t buf[6400];
+  lv_display_set_buffers(disp, buf, NULL, 6400, LV_DISPLAY_RENDER_MODE_PARTIAL);
+
+  lv_obj_t *scr = lv_obj_create(NULL);      // 创建屏幕（没有父对象）
+  lv_disp_load_scr(scr);   
+  // lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
+    /*Change the active screen's background color*/
+  lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x0000ff), LV_PART_MAIN);
+
+  /*Create a white label, set its text and align it to the center*/
+  lv_obj_t * label = lv_label_create(lv_screen_active());
+  lv_label_set_text(label, "Hello world");
+  lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xffffff), LV_PART_MAIN);
+  lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  
-  uint8_t i = 0;
-  uint16_t j = 0;
+  uint8_t i = 0;  
   while (1)
   {
 
@@ -179,31 +210,12 @@ int main(void)
       if (x == 4095 || y == 0) {
         touch_screen_pressed = false;
         log_write(LOG_LEVEL_DEBUG, "touch unpressed");
+        lv_display_set_rotation(disp, i++ % 4);
       } else {
         log_write(LOG_LEVEL_DEBUG, "X: %d, Y: %d", x, y);
       }
     }
 
-    if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
-      if (i%2) {
-        // Blink_LED(2);
-        // LCD_Send_Cmd(0x21);
-      } else {
-        // Blink_LED(1);
-        // LCD_Send_Cmd(0x20);
-      }
-      // uint8_t ch[] = { 0x00,0x00,0x10,0x10,0x18,0x28,0x28,0x24,0x3C,0x44,0x42,0x42,0xE7,0x00,0x00,0x00 };
-      // uint8_t ch[] = {     0x00, 0xC0, 0x20, 0x20, 0x20, 0xC0, 0x00, 0x00, 0x00, 0x0F, 0x10, 0x10, 0x10, 0x0F, 0x00, 0x00}; 
-      uint8_t ch[][32] = {
-        /* 0 孙 */ {0x00,0x04,0x7e,0x04,0x40,0x04,0x20,0x04,0x10,0x04,0x10,0x15,0x50,0x25,0x30,0x25,0x9c,0x44,0x93,0x44,0x50,0x44,0x10,0x04,0x10,0x04,0x10,0x04,0x14,0x05,0x08,0x02,},
-        /* 1 欣 */ {0x40,0x04,0xe0,0x04,0x1c,0x04,0x04,0x7e,0x04,0x42,0x04,0x21,0xfc,0x08,0x24,0x08,0x24,0x08,0x24,0x08,0x24,0x14,0x24,0x14,0x24,0x12,0x22,0x22,0x22,0x21,0x81,0x40,},
-        /* 2 妍 */ {0x08,0x00,0xc8,0x7f,0x08,0x11,0x08,0x11,0x3f,0x11,0x24,0x11,0x24,0x11,0xe4,0x7f,0x24,0x11,0x12,0x11,0x14,0x11,0x08,0x11,0x14,0x11,0x22,0x11,0x81,0x10,0x40,0x10,}
-        };
-      // uint8_t ch[] = { 0x80,0x80,0x40,0x40,0x20,0x20,0x10,0x10,0x08,0x08,0x04,0x04,0x02,0x02,0x01,0x01 };
-
-      j = j + 20; 
-      i++;
-    }
     lv_timer_handler();
     HAL_Delay(2);  // 每秒发送一次
     // LCD_Draw_Square_Dot(j, j++, RED, 10);

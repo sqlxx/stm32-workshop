@@ -25,7 +25,7 @@ void log_write(uint8_t level, const char* format, ...) {
 
   va_list args;
   va_start(args, format);
-  int len = sprintf(buf, "%8lu %s", get_timestamp(), level_str[level]);
+  int len = sprintf(buf, "%8lu %s", get_timestamp(), level_str[level-1]);
   len += vsnprintf(buf + len, sizeof(buf) - len, format, args);
 
   HAL_UART_Transmit(&UART_HANDLE, (uint8_t *)buf, len, 0xFFFF);

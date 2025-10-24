@@ -12,7 +12,8 @@
       "log_uart.h": "c",
       "limits": "c",
       "cmath": "c",
-      "type_traits": "c"
+      "type_traits": "c",
+      "lcd_ili9341.h": "c"
     },
     "vsmqtt.brokerProfiles": [
       {
