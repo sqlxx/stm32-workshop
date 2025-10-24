@@ -13,10 +13,10 @@ extern "C" {
 
 #include "stm32f1xx_hal.h"
 
-#define LOG_LEVEL_DEBUG    0
-#define LOG_LEVEL_INFO     1
-#define LOG_LEVEL_WARNING  2
-#define LOG_LEVEL_ERROR    3
+#define LOG_LEVEL_DEBUG    1
+#define LOG_LEVEL_INFO     2
+#define LOG_LEVEL_WARNING  3
+#define LOG_LEVEL_ERROR    4
 
 // Configuration start
 #define UART_HANDLE huart1

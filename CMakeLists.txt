@@ -41,11 +41,23 @@ add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
     COMMENT "Building ${CMAKE_PROJECT_NAME}.bin and ${CMAKE_PROJECT_NAME}.hex"
 )
 
-add_custom_target(flash
-    COMMAND st-flash write ${CMAKE_PROJECT_NAME}.bin 0x8000000
-    DEPENDS ${CMAKE_PROJECT_NAME}
-    COMMENT "Flashing ${CMAKE_PROJECT_NAME}.bin to target"
-)
+find_program(OPENOCD openocd)
+find_program(ST_FLASH st-flash)
+
+if(OPENOCD)
+  add_custom_target(flash
+      COMMAND ${OPENOCD} -f interface/stlink.cfg -f target/stm32f1x.cfg -c "program ${CMAKE_PROJECT_NAME}.bin verify reset exit 0x8000000"
+      COMMENT "Flashing ${CMAKE_PROJECT_NAME}.bin to target with OpenOCD"
+  )
+elseif(ST_FLASH)
+  add_custom_target(flash
+      COMMAND st-flash write ${CMAKE_PROJECT_NAME}.bin 0x8000000
+      DEPENDS ${CMAKE_PROJECT_NAME}
+      COMMENT "Flashing ${CMAKE_PROJECT_NAME}.bin to target with ST_LINK"
+  )
+else()
+  message(WARNING "No flashing tool (OpenOCD or ST_FLASH) found in PATH")
+endif()
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
