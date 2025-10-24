@@ -26,6 +26,7 @@
 #include "touch_xpt2046.h"
 #include "log_uart.h"
 #include "stdbool.h"
+#include "lvgl.h"
 
 /* USER CODE END Includes */
 
@@ -83,6 +84,7 @@ int Button_Clicked(GPIO_TypeDef *Gpiox, uint16_t GPIO_Pin) {
   return 0;
 }
 
+
 void Blink_LED(uint8_t time) {
      while(time--) {
       HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -103,6 +105,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   }
 }
 
+void lcd_send_cmd(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, const uint8_t *param, size_t param_size) {
+
+}
+
+void lcd_send_color(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, uint8_t *param, size_t param_size) {
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -113,7 +122,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -122,6 +130,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  lv_tick_set_cb(HAL_GetTick);
 
   /* USER CODE END Init */
 
@@ -139,7 +148,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  LCD_Hard_Reset();
+  // LCD_Hard_Reset();
 
   log_write(LOG_LEVEL_DEBUG, "System starting");
   if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2) != HAL_OK) {
@@ -148,7 +157,10 @@ int main(void)
     Blink_LED(1);
   }
 
-  LCD_Init();
+  // LCD_Init();
+  lv_init();
+  lv_disp_t* disp = lv_ili9341_create(LCD_WIDTH, LCD_HEIGHT, 0, lcd_send_cmd, lcd_send_color);
+  lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
 
   /* USER CODE END 2 */
 
@@ -188,16 +200,12 @@ int main(void)
         /* 2 妍 */ {0x08,0x00,0xc8,0x7f,0x08,0x11,0x08,0x11,0x3f,0x11,0x24,0x11,0x24,0x11,0xe4,0x7f,0x24,0x11,0x12,0x11,0x14,0x11,0x08,0x11,0x14,0x11,0x22,0x11,0x81,0x10,0x40,0x10,}
         };
       // uint8_t ch[] = { 0x80,0x80,0x40,0x40,0x20,0x20,0x10,0x10,0x08,0x08,0x04,0x04,0x02,0x02,0x01,0x01 };
-      for (int c = 0; c < 3; c++) {
-        LCD_Full_Char(j, 0, ch[c], YELLOW);
-        j = j + 20;
-      }
 
-      // LCD_Draw_Line(j, j, j, j+10,RED, 2);
       j = j + 20; 
       i++;
     }
-    HAL_Delay(10);  // 每秒发送一次
+    lv_timer_handler();
+    HAL_Delay(2);  // 每秒发送一次
     // LCD_Draw_Square_Dot(j, j++, RED, 10);
     // while(dutyCycle < __HAL_TIM_GET_AUTORELOAD(&htim2)) {
     //   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);

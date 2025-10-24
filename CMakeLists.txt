@@ -69,7 +69,6 @@ add_subdirectory(LVGL/lvgl)
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
-    lvgl
 )
 
 file(GLOB_RECURSE USER_SOURCES "User/Src/*.c")
@@ -84,6 +83,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
   "User/Inc"
+  "LVGL/lvgl"
 )
 
 # Add project symbols (macros)
@@ -94,6 +94,7 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
+    lvgl
 
     # Add user defined libraries
 )
