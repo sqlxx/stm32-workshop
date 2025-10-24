@@ -172,7 +172,7 @@ int main(void)
   lv_tick_set_cb(HAL_GetTick);
 
   // 创建LVGL显示设备
-  lv_disp_t* disp = lv_ili9341_create(320, 240, LV_LCD_FLAG_MIRROR_X|LV_LCD_FLAG_BGR, lcd_send_cmd, lcd_send_color);
+  lv_disp_t* disp = lv_ili9341_create(320, 240, LV_LCD_FLAG_MIRROR_X, lcd_send_cmd, lcd_send_color);
   if (disp == NULL) {
     log_write(LOG_LEVEL_ERROR, "LVGL display initialization failed");
     Blink_LED(5);
@@ -187,19 +187,19 @@ int main(void)
   lv_disp_load_scr(scr);   
   // lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
     /*Change the active screen's background color*/
-  lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x0000ff), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x0000B5), LV_PART_MAIN);
 
   /*Create a white label, set its text and align it to the center*/
   lv_obj_t * label = lv_label_create(lv_screen_active());
   lv_label_set_text(label, "Hello world");
-  lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xffffff), LV_PART_MAIN);
+  lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xFFFFFF), LV_PART_MAIN);
   lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
   
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t i = 0;  
+  uint8_t i = 1;  
   while (1)
   {
 
