@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
 
-#
 # This file is generated only once,
 # and is not re-generated if converter is called multiple times.
 #
@@ -36,10 +35,24 @@ enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
+add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${CMAKE_PROJECT_NAME}> ${CMAKE_PROJECT_NAME}.bin
+    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${CMAKE_PROJECT_NAME}> ${CMAKE_PROJECT_NAME}.hex
+    COMMENT "Building ${CMAKE_PROJECT_NAME}.bin and ${CMAKE_PROJECT_NAME}.hex"
+)
+
+add_custom_target(flash
+    COMMAND st-flash write ${CMAKE_PROJECT_NAME}.bin 0x8000000
+    DEPENDS ${CMAKE_PROJECT_NAME}
+    COMMENT "Flashing ${CMAKE_PROJECT_NAME}.bin to target"
+)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
-add_subdirectory(LVGL)
+set(LV_BUILD_CONF_PATH "LVGL/lv_conf.h" CACHE PATH "LVGL Config file path")
+set(CONFIG_LV_BUILD_EXAMPLES off CACHE BOOL "Build LVGL examples")
+set(CONFIG_LV_BUILD_DEMOS off CACHE BOOL "Build LVGL demos")
+add_subdirectory(LVGL/lvgl)
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
@@ -47,14 +60,18 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     lvgl
 )
 
+file(GLOB_RECURSE USER_SOURCES "User/Src/*.c")
+
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    ${USER_SOURCES}
     # Add user sources here
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+  "User/Inc"
 )
 
 # Add project symbols (macros)
