@@ -26,7 +26,7 @@ void LCD_Send_Data(uint8_t *data, size_t len) {
   LCD_CHIP_SELECT();
   LCD_MODE_DATA();
   log_write(LOG_LEVEL_DEBUG, "In LCD_Send_Data: %d", len);
-  HAL_SPI_Transmit(&LCD_SPI_HANDLE, data, len, 1000);
+  HAL_SPI_Transmit(&LCD_SPI_HANDLE, data, len, 5000);
   LCD_CHIP_UNSELECT();
 }
 

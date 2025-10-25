@@ -125,8 +125,8 @@ lv_color32_t lv_color_to_32(lv_color_t color, lv_opa_t opa)
 
 uint16_t lv_color_to_u16(lv_color_t color)
 {
-    uint16_t color16 = ((color.red & 0xF8) << 8) + ((color.green & 0xFC) << 3) + ((color.blue & 0xF8) >> 3);
-    return ((color16 >> 8) & 0xFF) | ((color16 & 0xFF) << 8);
+    uint16_t val = ((color.red & 0xF8) << 8) + ((color.green & 0xFC) << 3) + ((color.blue & 0xF8) >> 3);
+    return (val & 0xFF00) >> 8 | (val & 0x00FF) << 8;
 }
 
 uint32_t lv_color_to_u32(lv_color_t color)

@@ -107,23 +107,25 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 void lcd_send_cmd(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, const uint8_t *param, size_t param_size) {
   (void)disp;
-  log_write(LOG_LEVEL_DEBUG, "In send command: %d, %d, %02X", cmd_size, param_size, *cmd);
+  // log_write(LOG_LEVEL_DEBUG, "In send command: %d, %d, %02X", cmd_size, param_size, *cmd);
   LCD_Send_Cmd_MB((uint8_t*)cmd, cmd_size); 
   if (param_size > 0) {
     LCD_Send_Data((uint8_t*)param, param_size);
   }
-  log_write(LOG_LEVEL_DEBUG, "out send command");
 }
 
 void lcd_send_color(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, uint8_t *param, size_t param_size) {
   (void)disp;
   LCD_Send_Cmd_MB((uint8_t*)cmd, cmd_size); 
   if (param_size > 0) {
-    log_write(LOG_LEVEL_DEBUG, "In send color: %d, %d, %02X%02X", cmd_size, param_size, param[0], param[1]);
+    // log_write(LOG_LEVEL_DEBUG, "In send color: %d, %d, %02X%02X", cmd_size, param_size, param[0], param[1]);
 
     LCD_Send_Data((uint8_t*)param, param_size);
   }
+  
+  log_write(LOG_LEVEL_DEBUG, "finished send color: %d, %d", cmd_size, param_size);
   lv_display_flush_ready(disp);
+  log_write(LOG_LEVEL_DEBUG, "flushed");
 
 }
 /* USER CODE END 0 */
@@ -180,20 +182,43 @@ int main(void)
     log_write(LOG_LEVEL_DEBUG, "LVGL display initialized successfully");
   }
 
-  static uint8_t buf[6400];
-  lv_display_set_buffers(disp, buf, NULL, 6400, LV_DISPLAY_RENDER_MODE_PARTIAL);
+  static uint8_t buf[3200];
+  lv_display_set_buffers(disp, buf, NULL, 3200, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
-  lv_obj_t *scr = lv_obj_create(NULL);      // 创建屏幕（没有父对象）
-  lv_disp_load_scr(scr);   
+  // lv_obj_t *scr = lv_obj_create(NULL);      // 创建屏幕（没有父对象）
+  // lv_disp_load_scr(scr);   
   // lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
     /*Change the active screen's background color*/
-  lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x0000B5), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x00b500), LV_PART_MAIN);
+  // lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0x000000), LV_PART_MAIN);
 
   /*Create a white label, set its text and align it to the center*/
-  lv_obj_t * label = lv_label_create(lv_screen_active());
+  lv_obj_t* label = lv_label_create(lv_screen_active());
   lv_label_set_text(label, "Hello world");
-  lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xFFFFFF), LV_PART_MAIN);
   lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+
+    /*Create a slider in the center of the display*/
+  // lv_obj_t* slider = lv_slider_create(lv_screen_active());
+  // lv_obj_set_width(slider, 200);                          /*Set the width*/
+  // lv_obj_center(slider);                                  /*Align to the center of the parent (screen)*/
+  // lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);     /*Assign an event function*/
+
+  // /*Create a label above the slider*/
+  // lv_obj_t* labelslider = lv_label_create(lv_screen_active());
+  // lv_label_set_text(labelslider, "0");
+  // lv_obj_align_to(labelslider, slider, LV_ALIGN_OUT_TOP_MID, 0, -15);    /*Align top of the slider*/
+
+
+  lv_obj_t* button = lv_button_create(lv_screen_active());
+  lv_obj_set_size(button, 120, 50);
+  lv_obj_align(button, LV_ALIGN_CENTER, 0, 50);
+  lv_obj_set_style_bg_color(button, lv_color_hex(0x0000ff), LV_PART_MAIN);
+  lv_obj_set_style_text_color(button, lv_color_hex(0x00ff00), LV_PART_MAIN);
+
+  lv_obj_t *buttonTxt = lv_label_create(button);
+  lv_label_set_text(buttonTxt, "Click Me!");
+  lv_obj_center(buttonTxt);    
+
   
   /* USER CODE END 2 */
 
