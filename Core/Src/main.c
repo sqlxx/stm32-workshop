@@ -123,9 +123,7 @@ void lcd_send_color(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, uin
     LCD_Send_Data((uint8_t*)param, param_size);
   }
   
-  log_write(LOG_LEVEL_DEBUG, "finished send color: %d, %d", cmd_size, param_size);
   lv_display_flush_ready(disp);
-  log_write(LOG_LEVEL_DEBUG, "flushed");
 
 }
 /* USER CODE END 0 */
