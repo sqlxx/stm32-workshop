@@ -1,6 +1,9 @@
 #include "touch_xpt2046.h"
 
 #define SAMPLE_TIMES 10
+#define LCD_WIDTH 320
+#define LCD_HEIGHT 240
+
 
 uint16_t Touch_Read_Data(uint8_t cmd) {
   uint8_t txData[3] = {cmd, 0, 0};
@@ -20,6 +23,12 @@ uint16_t Touch_Read_Data(uint8_t cmd) {
 
 }
 
+// 将in的坐标范围转换成out的坐标范围
+static uint16_t map_axis(uint16_t coord, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max) {
+  return (coord - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+
 // 总是长边为x, 短边为y，需要根据实际情况转换为屏幕坐标
 void Touch_Get_Pos(uint16_t* x, uint16_t* y) {
   uint16_t x_sum = 0, y_sum = 0;
@@ -27,7 +36,16 @@ void Touch_Get_Pos(uint16_t* x, uint16_t* y) {
     x_sum += Touch_Read_Data(0x90);
     y_sum += Touch_Read_Data(0xD0);
   }
-  *x = x_sum/SAMPLE_TIMES;
-  *y = y_sum/SAMPLE_TIMES;
+  x_sum = x_sum / SAMPLE_TIMES;
+  y_sum = y_sum / SAMPLE_TIMES;
+
+  if (x_sum == 4095 || y_sum == 0) {
+    *x = LCD_WIDTH;
+    *y = LCD_HEIGHT;
+  } else {
+    *x = map_axis(x_sum, 100, 4000, 0, LCD_WIDTH - 1);
+    *y = map_axis(y_sum, 100, 4000, 0, LCD_HEIGHT - 1);
+  }
 
 }
+

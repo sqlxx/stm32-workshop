@@ -85,7 +85,7 @@ int Button_Clicked(GPIO_TypeDef *Gpiox, uint16_t GPIO_Pin) {
 }
 
 
-void Blink_LED(uint8_t time) {
+static void Blink_LED(uint8_t time) {
      while(time--) {
       HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
       HAL_Delay(500);
@@ -105,7 +105,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   }
 }
 
-void lcd_send_cmd(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, const uint8_t *param, size_t param_size) {
+static void lcd_send_cmd(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, const uint8_t *param, size_t param_size) {
   (void)disp;
   // log_write(LOG_LEVEL_DEBUG, "In send command: %d, %d, %02X", cmd_size, param_size, *cmd);
   LCD_Send_Cmd_MB((uint8_t*)cmd, cmd_size); 
@@ -114,7 +114,7 @@ void lcd_send_cmd(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, const
   }
 }
 
-void lcd_send_color(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, uint8_t *param, size_t param_size) {
+static void lcd_send_color(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, uint8_t *param, size_t param_size) {
   (void)disp;
   LCD_Send_Cmd_MB((uint8_t*)cmd, cmd_size); 
   if (param_size > 0) {
@@ -125,6 +125,85 @@ void lcd_send_color(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, uin
   
   lv_display_flush_ready(disp);
 
+}
+
+static void btn_event_cb(lv_event_t* e) {
+  static int count = 0;
+  lv_obj_t * target_label = lv_event_get_user_data(e);
+  lv_label_set_text_fmt(target_label, "You clicked %d times", ++count);
+}
+
+static void touch_xpt2046_read(lv_indev_t * indev, lv_indev_data_t * data) {
+  (void)data;
+  (void)indev;
+  static uint16_t x = 0;
+  static uint16_t y = 0;
+
+  if (!touch_screen_pressed) {
+    data->state = LV_INDEV_STATE_REL;
+  } else {
+    Touch_Get_Pos(&x, &y);
+
+    if (x == 320 || y == 240) {
+      touch_screen_pressed = false;
+      data->state = LV_INDEV_STATE_REL;
+    } else {
+      log_write(LOG_LEVEL_DEBUG, "Touch X: %d, Y: %d", x, y);
+      data->state = LV_INDEV_STATE_PR;
+      data->point.x = x;
+      data->point.y = 240-1-y; //xpt2046的坐标系与lvgl的坐标系y轴相反
+    }
+
+  }
+}
+
+static void create_input_device() {
+  lv_indev_t * indev = lv_indev_create();
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(indev, touch_xpt2046_read);
+  log_write(LOG_LEVEL_DEBUG, "Input device created");
+}
+
+static void create_main_screen() {
+     /*Change the active screen's background color*/
+  lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x1c202c), LV_PART_MAIN);
+  lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xffffff), LV_PART_MAIN);
+
+  lv_obj_t * top_bar = lv_obj_create(lv_screen_active()); // top bar
+  lv_obj_set_size(top_bar, lv_pct(100), 24);
+  lv_obj_set_flex_align(top_bar, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_set_style_pad_hor(top_bar, 3, LV_STATE_DEFAULT); 
+  lv_obj_set_style_bg_color(top_bar, lv_color_hex(0x262930), LV_STATE_DEFAULT);
+  lv_obj_set_style_border_side(top_bar, LV_BORDER_SIDE_BOTTOM, LV_STATE_DEFAULT);
+  lv_obj_set_style_border_width(top_bar, 1, LV_STATE_DEFAULT);
+  lv_obj_set_style_border_color(top_bar, lv_color_hex(0x46536b), LV_STATE_DEFAULT); 
+  lv_obj_set_style_border_opa(top_bar, LV_OPA_40, LV_OPA_COVER);
+
+  lv_obj_t * title = lv_label_create(top_bar);
+  lv_label_set_text(title, "LVGL on STM32F103");
+
+  // - 电池图标
+  lv_obj_t * battery_label = lv_label_create(top_bar);
+  lv_label_set_text(battery_label, LV_SYMBOL_BATTERY_3);
+  lv_label_set_text_fmt(battery_label, "%s %s", LV_SYMBOL_WIFI, LV_SYMBOL_BATTERY_3);
+
+
+  /*Create a white label, set its text and align it to the center*/
+  lv_obj_t* label = lv_label_create(lv_screen_active());
+  lv_label_set_text(label, "Hello world");
+  lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+
+  lv_obj_t* button = lv_button_create(lv_screen_active());
+  lv_obj_set_size(button, 120, 50);
+  lv_obj_align(button, LV_ALIGN_CENTER, 0, 50);
+  lv_obj_set_style_bg_color(button, lv_color_hex(0x0000ff), LV_PART_MAIN);
+  lv_obj_set_style_text_color(button, lv_color_hex(0x00ff00), LV_PART_MAIN);
+
+  lv_obj_t *buttonTxt = lv_label_create(button);
+  lv_label_set_text(buttonTxt, "Click Me!");
+  lv_obj_center(buttonTxt);    
+
+  lv_obj_add_event_cb(button, btn_event_cb, LV_EVENT_CLICKED, label);
 }
 /* USER CODE END 0 */
 
@@ -180,49 +259,17 @@ int main(void)
     log_write(LOG_LEVEL_DEBUG, "LVGL display initialized successfully");
   }
 
+  create_input_device();
+
   static uint8_t buf[3200];
   lv_display_set_buffers(disp, buf, NULL, 3200, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
-  // lv_obj_t *scr = lv_obj_create(NULL);      // 创建屏幕（没有父对象）
-  // lv_disp_load_scr(scr);   
-  // lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
-    /*Change the active screen's background color*/
-  lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x00b500), LV_PART_MAIN);
-  // lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0x000000), LV_PART_MAIN);
-
-  /*Create a white label, set its text and align it to the center*/
-  lv_obj_t* label = lv_label_create(lv_screen_active());
-  lv_label_set_text(label, "Hello world");
-  lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-
-    /*Create a slider in the center of the display*/
-  // lv_obj_t* slider = lv_slider_create(lv_screen_active());
-  // lv_obj_set_width(slider, 200);                          /*Set the width*/
-  // lv_obj_center(slider);                                  /*Align to the center of the parent (screen)*/
-  // lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);     /*Assign an event function*/
-
-  // /*Create a label above the slider*/
-  // lv_obj_t* labelslider = lv_label_create(lv_screen_active());
-  // lv_label_set_text(labelslider, "0");
-  // lv_obj_align_to(labelslider, slider, LV_ALIGN_OUT_TOP_MID, 0, -15);    /*Align top of the slider*/
-
-
-  lv_obj_t* button = lv_button_create(lv_screen_active());
-  lv_obj_set_size(button, 120, 50);
-  lv_obj_align(button, LV_ALIGN_CENTER, 0, 50);
-  lv_obj_set_style_bg_color(button, lv_color_hex(0x0000ff), LV_PART_MAIN);
-  lv_obj_set_style_text_color(button, lv_color_hex(0x00ff00), LV_PART_MAIN);
-
-  lv_obj_t *buttonTxt = lv_label_create(button);
-  lv_label_set_text(buttonTxt, "Click Me!");
-  lv_obj_center(buttonTxt);    
-
-  
+  create_main_screen();
+ 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t i = 1;  
   while (1)
   {
 
@@ -230,10 +277,9 @@ int main(void)
       uint16_t x = 0;
       uint16_t y = 0;
       Touch_Get_Pos(&x, &y);
-      if (x == 4095 || y == 0) {
+      if (x == 320 || y == 240) {
         touch_screen_pressed = false;
         log_write(LOG_LEVEL_DEBUG, "touch unpressed");
-        lv_display_set_rotation(disp, i++ % 4);
       } else {
         log_write(LOG_LEVEL_DEBUG, "X: %d, Y: %d", x, y);
       }
