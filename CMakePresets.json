@@ -13,7 +13,8 @@
             "name": "Debug",
             "inherits": "default",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_FLAGS": "-mcpu=cortex-m3 -mthumb -g2 -Og -ffunction-sections -fdata-sections"
             }
         },
         {
