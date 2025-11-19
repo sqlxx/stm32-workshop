@@ -1,0 +1,1 @@
+#include "camera_ov7670.h"
