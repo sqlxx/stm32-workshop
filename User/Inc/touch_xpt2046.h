@@ -7,8 +7,8 @@
 
 #include "stm32f1xx_hal.h"
 
-#define TOUCH_CS_PIN GPIO_PIN_5
-#define TOUCH_CS_PORT GPIOC
+#define TOUCH_CS_PIN GPIO_PIN_4
+#define TOUCH_CS_PORT GPIOA
 
 #define TOUCH_SPI_HANDLE hspi1
 
