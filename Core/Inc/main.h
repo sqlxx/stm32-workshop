@@ -81,6 +81,7 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOA
 #define T_PEN_INT_Pin GPIO_PIN_6
 #define T_PEN_INT_GPIO_Port GPIOA
+#define T_PEN_INT_EXTI_IRQn EXTI9_5_IRQn
 #define CAM_4_Pin GPIO_PIN_4
 #define CAM_4_GPIO_Port GPIOC
 #define CAM_5_Pin GPIO_PIN_5
