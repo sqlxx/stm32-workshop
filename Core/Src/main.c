@@ -26,6 +26,7 @@
 #include "touch_xpt2046.h"
 #include "log_uart.h"
 #include "stdbool.h"
+#include "ov7670.h"
 
 /* USER CODE END Includes */
 
@@ -44,6 +45,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c2;
+
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
@@ -53,6 +56,8 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 bool touch_screen_pressed = false;
+bool new_frame_flag = false;
+bool processing_frame = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,6 +67,7 @@ static void MX_TIM2_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -91,6 +97,8 @@ void Blink_LED(uint8_t time) {
       HAL_Delay(500);
     } 
 }
+// uint8_t color_data[2] = {0, 0};
+// bool high_8 = true;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   if (GPIO_Pin == B1_Pin) {
@@ -100,8 +108,31 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
       log_write(LOG_LEVEL_DEBUG, "Touch screen pressed");
       touch_screen_pressed = true;
     }
+  } else if (GPIO_Pin == CAM_PLK_Pin) {
+    // if (!processing_frame) {
+    //   return;
+    // }
+    
+    // if (new_frame_flag) {
+    //   LCD_Set_Window(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);
+    //   LCD_Send_Cmd(0x2c);
+    //   new_frame_flag = false;
+    // }
+    
+    // uint8_t data = GPIOC->IDR & 0xFF; // 读取 D0-D7
+
+    // if (high_8) {
+    //   color_data[0] = data; // 高8位
+    //   high_8 = false;
+    // } else {
+    //   color_data[1] = data; // 低8位
+    //   LCD_Send_Data(color_data, 2);
+    //   high_8 = true;
+
+    // }
   }
 }
+
 
 /* USER CODE END 0 */
 
@@ -138,6 +169,7 @@ int main(void)
   MX_SPI2_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
+  MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
   LCD_Hard_Reset();
 
@@ -150,64 +182,42 @@ int main(void)
 
   LCD_Init();
 
+  HAL_StatusTypeDef status = HAL_I2C_IsDeviceReady(&hi2c2, 0x42, 3, 100);
+  if (status == HAL_OK) {
+    log_write(LOG_LEVEL_INFO, "OV7670 is ready");
+  } else {
+    log_write(LOG_LEVEL_ERROR, "OV7670 is not ready");
+    Blink_LED(3);
+  }
+
+  uint8_t pid = OV7670_Read_Reg(0x0A);
+  uint8_t ver = OV7670_Read_Reg(0x0B);
+  log_write(LOG_LEVEL_INFO, "OV7670 Register PID:Ver Value: 0x%02X:0x%02X", pid, ver);
+
+  OV7670_Init();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   
-  uint8_t i = 0;
-  uint16_t j = 0;
   while (1)
   {
 
-    if (touch_screen_pressed) {
-      uint16_t x = 0;
-      uint16_t y = 0;
-      Touch_Get_Pos(&x, &y);
-      if (x == 4095 || y == 0) {
-        touch_screen_pressed = false;
-        log_write(LOG_LEVEL_DEBUG, "touch unpressed");
-      } else {
-        log_write(LOG_LEVEL_DEBUG, "X: %d, Y: %d", x, y);
-      }
-    }
+    log_write(LOG_LEVEL_INFO, "Before Frame Start");
+    // 等待 VSYNC 变低，表示一帧数据开始
+    while(HAL_GPIO_ReadPin(CAM_VSYNC_GPIO_Port, CAM_VSYNC_Pin) == GPIO_PIN_SET);
+    log_write(LOG_LEVEL_INFO, "Frame Start");
+    processing_frame = true;
+    new_frame_flag = true;
+
 
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
-      if (i%2) {
-        // Blink_LED(2);
-        // LCD_Send_Cmd(0x21);
-      } else {
-        // Blink_LED(1);
-        // LCD_Send_Cmd(0x20);
-      }
-      // uint8_t ch[] = { 0x00,0x00,0x10,0x10,0x18,0x28,0x28,0x24,0x3C,0x44,0x42,0x42,0xE7,0x00,0x00,0x00 };
-      // uint8_t ch[] = {     0x00, 0xC0, 0x20, 0x20, 0x20, 0xC0, 0x00, 0x00, 0x00, 0x0F, 0x10, 0x10, 0x10, 0x0F, 0x00, 0x00}; 
-      uint8_t ch[][32] = {
-        /* 0 孙 */ {0x00,0x04,0x7e,0x04,0x40,0x04,0x20,0x04,0x10,0x04,0x10,0x15,0x50,0x25,0x30,0x25,0x9c,0x44,0x93,0x44,0x50,0x44,0x10,0x04,0x10,0x04,0x10,0x04,0x14,0x05,0x08,0x02,},
-        /* 1 欣 */ {0x40,0x04,0xe0,0x04,0x1c,0x04,0x04,0x7e,0x04,0x42,0x04,0x21,0xfc,0x08,0x24,0x08,0x24,0x08,0x24,0x08,0x24,0x14,0x24,0x14,0x24,0x12,0x22,0x22,0x22,0x21,0x81,0x40,},
-        /* 2 妍 */ {0x08,0x00,0xc8,0x7f,0x08,0x11,0x08,0x11,0x3f,0x11,0x24,0x11,0x24,0x11,0xe4,0x7f,0x24,0x11,0x12,0x11,0x14,0x11,0x08,0x11,0x14,0x11,0x22,0x11,0x81,0x10,0x40,0x10,}
-        };
-      // uint8_t ch[] = { 0x80,0x80,0x40,0x40,0x20,0x20,0x10,0x10,0x08,0x08,0x04,0x04,0x02,0x02,0x01,0x01 };
-      for (int c = 0; c < 3; c++) {
-        LCD_Full_Char(j, 0, ch[c], YELLOW);
-        j = j + 20;
-      }
+      Blink_LED(1);
 
-      // LCD_Draw_Line(j, j, j, j+10,RED, 2);
-      j = j + 20; 
-      i++;
     }
+    
     HAL_Delay(10);  // 每秒发送一次
-    // LCD_Draw_Square_Dot(j, j++, RED, 10);
-    // while(dutyCycle < __HAL_TIM_GET_AUTORELOAD(&htim2)) {
-    //   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, ++dutyCycle);
-    //   HAL_Delay(1);
-    // }
-
-    // while(dutyCycle > 0) {
-    //   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, --dutyCycle);
-    //   HAL_Delay(1);
-    // }
   }
     /* USER CODE END WHILE */
 
@@ -252,6 +262,41 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  HAL_RCC_MCOConfig(RCC_MCO, RCC_MCO1SOURCE_HSE, RCC_MCODIV_1);
+}
+
+/**
+  * @brief I2C2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C2_Init(void)
+{
+
+  /* USER CODE BEGIN I2C2_Init 0 */
+
+  /* USER CODE END I2C2_Init 0 */
+
+  /* USER CODE BEGIN I2C2_Init 1 */
+
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C2_Init 2 */
+
+  /* USER CODE END I2C2_Init 2 */
+
 }
 
 /**
@@ -440,32 +485,29 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(T_CS_GPIO_Port, T_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(T_CS_GPIO_Port, T_CS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LCD_RST_Pin|LCD_A0_Pin|LCD_CS_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : B1_Pin T_PEN_INT_Pin */
-  GPIO_InitStruct.Pin = B1_Pin|T_PEN_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  /*Configure GPIO pins : B1_Pin CAM_0_Pin CAM_1_Pin CAM_2_Pin
+                           CAM_3_Pin CAM_4_Pin CAM_5_Pin CAM_6_Pin
+                           CAM_7_Pin CAM_HREF_Pin CAM_VSYNC_Pin */
+  GPIO_InitStruct.Pin = B1_Pin|CAM_0_Pin|CAM_1_Pin|CAM_2_Pin
+                          |CAM_3_Pin|CAM_4_Pin|CAM_5_Pin|CAM_6_Pin
+                          |CAM_7_Pin|CAM_HREF_Pin|CAM_VSYNC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : USART_TX_Pin USART_RX_Pin */
-  GPIO_InitStruct.Pin = USART_TX_Pin|USART_RX_Pin;
+  /*Configure GPIO pins : USART_TX_Pin USART_RX_Pin PA8 */
+  GPIO_InitStruct.Pin = USART_TX_Pin|USART_RX_Pin|GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : LD2_Pin */
-  GPIO_InitStruct.Pin = LD2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : T_CS_Pin */
   GPIO_InitStruct.Pin = T_CS_Pin;
@@ -474,6 +516,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(T_CS_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : LD2_Pin */
+  GPIO_InitStruct.Pin = LD2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : T_PEN_INT_Pin */
+  GPIO_InitStruct.Pin = T_PEN_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(T_PEN_INT_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LCD_RST_Pin LCD_A0_Pin LCD_CS_Pin */
   GPIO_InitStruct.Pin = LCD_RST_Pin|LCD_A0_Pin|LCD_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -481,9 +536,15 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : CAM_PLK_Pin */
+  GPIO_InitStruct.Pin = CAM_PLK_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(CAM_PLK_GPIO_Port, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
