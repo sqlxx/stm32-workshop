@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stdio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -37,10 +38,15 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define VSYNC_IS_HIGH() (HAL_GPIO_ReadPin(CAM_VSYNC_GPIO_Port, CAM_VSYNC_Pin) == GPIO_PIN_SET)
+#define VSYNC_IS_LOW()  (HAL_GPIO_ReadPin(CAM_VSYNC_GPIO_Port, CAM_VSYNC_Pin) == GPIO_PIN_RESET)
+#define HREF_IS_HIGH() (HAL_GPIO_ReadPin(CAM_HREF_GPIO_Port, CAM_HREF_Pin) == GPIO_PIN_SET)
+#define PLK_IS_HIGH() (HAL_GPIO_ReadPin(CAM_PLK_GPIO_Port, CAM_PLK_Pin) == GPIO_PIN_SET)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+
 
 /* USER CODE END PM */
 
@@ -97,8 +103,8 @@ void Blink_LED(uint8_t time) {
       HAL_Delay(500);
     } 
 }
-// uint8_t color_data[2] = {0, 0};
-// bool high_8 = true;
+uint8_t color_data[2] = {0, 0};
+bool high_8 = true;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   if (GPIO_Pin == B1_Pin) {
@@ -108,31 +114,20 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
       log_write(LOG_LEVEL_DEBUG, "Touch screen pressed");
       touch_screen_pressed = true;
     }
-  } else if (GPIO_Pin == CAM_PLK_Pin) {
-    // if (!processing_frame) {
-    //   return;
-    // }
-    
-    // if (new_frame_flag) {
-    //   LCD_Set_Window(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);
-    //   LCD_Send_Cmd(0x2c);
-    //   new_frame_flag = false;
-    // }
-    
-    // uint8_t data = GPIOC->IDR & 0xFF; // 读取 D0-D7
-
-    // if (high_8) {
-    //   color_data[0] = data; // 高8位
-    //   high_8 = false;
-    // } else {
-    //   color_data[1] = data; // 低8位
-    //   LCD_Send_Data(color_data, 2);
-    //   high_8 = true;
-
-    // }
-  }
+  } 
 }
+uint16_t ili9320_BGR2RGB(uint16_t c)
+{
+  uint16_t  r, g, b, rgb;
 
+  b = (c>>0)  & 0x1f;
+  g = (c>>5)  & 0x3f;
+  r = (c>>11) & 0x1f;
+  
+  rgb =  (b<<11) + (g<<5) + (r<<0);
+
+  return( rgb );
+}
 
 /* USER CODE END 0 */
 
@@ -200,21 +195,47 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  
+  uint32_t pixel;
+  uint8_t value;
+  uint8_t data[2] = {0, 0};
+
   while (1)
   {
-
-    log_write(LOG_LEVEL_INFO, "Before Frame Start");
-    // 等待 VSYNC 变低，表示一帧数据开始
-    while(HAL_GPIO_ReadPin(CAM_VSYNC_GPIO_Port, CAM_VSYNC_Pin) == GPIO_PIN_SET);
-    log_write(LOG_LEVEL_INFO, "Frame Start");
-    processing_frame = true;
-    new_frame_flag = true;
 
 
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
       Blink_LED(1);
+      // 等待 VSYNC 变低，表示一帧数据开始
+      LCD_Set_Window(0, 0, 319, 239);
+      LCD_Send_Cmd(0x2c);
+      while(VSYNC_IS_HIGH());
+      log_write(LOG_LEVEL_INFO, "Frame Capturing");
+      pixel = 0;
 
+      while (pixel < 153600) {
+        if (VSYNC_IS_HIGH()) {
+          log_write(LOG_LEVEL_INFO, "Frame Ended Prematurely at pixel %lu", pixel);
+          break;
+        }
+        
+        while(!PLK_IS_HIGH());
+
+        value = GPIOC->IDR & 0xFF;
+        log_write(LOG_LEVEL_INFO, "get vallue 0x%02X", value);
+        if (pixel%2) {
+          data[0] = value;
+        } else {
+          uint16_t v =ili9320_BGR2RGB(data[0] << 8 | value);
+          data[0] = (v >> 8) & 0xFF;
+          data[1] = v & 0xFF;
+
+          LCD_Send_Data(data, 2);
+        }
+        pixel++;
+        // while (PLK_IS_HIGH());
+
+      }
+      
     }
     
     HAL_Delay(10);  // 每秒发送一次
@@ -493,12 +514,18 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LCD_RST_Pin|LCD_A0_Pin|LCD_CS_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : B1_Pin CAM_0_Pin CAM_1_Pin CAM_2_Pin
-                           CAM_3_Pin CAM_4_Pin CAM_5_Pin CAM_6_Pin
-                           CAM_7_Pin CAM_HREF_Pin CAM_VSYNC_Pin */
-  GPIO_InitStruct.Pin = B1_Pin|CAM_0_Pin|CAM_1_Pin|CAM_2_Pin
-                          |CAM_3_Pin|CAM_4_Pin|CAM_5_Pin|CAM_6_Pin
-                          |CAM_7_Pin|CAM_HREF_Pin|CAM_VSYNC_Pin;
+  /*Configure GPIO pin : B1_Pin */
+  GPIO_InitStruct.Pin = B1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : CAM_0_Pin CAM_1_Pin CAM_2_Pin CAM_3_Pin
+                           CAM_4_Pin CAM_5_Pin CAM_6_Pin CAM_7_Pin
+                           CAM_HREF_Pin CAM_VSYNC_Pin CAM_PLK_Pin */
+  GPIO_InitStruct.Pin = CAM_0_Pin|CAM_1_Pin|CAM_2_Pin|CAM_3_Pin
+                          |CAM_4_Pin|CAM_5_Pin|CAM_6_Pin|CAM_7_Pin
+                          |CAM_HREF_Pin|CAM_VSYNC_Pin|CAM_PLK_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -536,20 +563,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CAM_PLK_Pin */
-  GPIO_InitStruct.Pin = CAM_PLK_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(CAM_PLK_GPIO_Port, &GPIO_InitStruct);
-
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-
   /* USER CODE BEGIN MX_GPIO_Init_2 */
+  // HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE END MX_GPIO_Init_2 */
 }

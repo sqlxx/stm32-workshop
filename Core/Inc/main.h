@@ -105,7 +105,6 @@ void Error_Handler(void);
 #define CAM_VSYNC_GPIO_Port GPIOC
 #define CAM_PLK_Pin GPIO_PIN_12
 #define CAM_PLK_GPIO_Port GPIOC
-#define CAM_PLK_EXTI_IRQn EXTI15_10_IRQn
 
 /* USER CODE BEGIN Private defines */
 

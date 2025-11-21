@@ -31,8 +31,8 @@ void OV7670_Init()
   uint8_t ret = OV7670_Write_Reg(0x12, 0x80);  // COM7 - 复位所有寄存器
   log_write(LOG_LEVEL_DEBUG, "OV7670 Reset Reg Write Result: %d", ret);
 
-  HAL_Delay(100);                // 等待复位完成
-  OV7670_Write_Reg(0x11, 0x83); // CLKRC - 设置时钟分频 为4
+  HAL_Delay(1000);                // 等待复位完成
+  OV7670_Write_Reg(0x11, 0x8F); // CLKRC - 设置时钟分频 
   OV7670_Write_Reg(0x3B, 0x02); // COM11 - 设置夜间模式关闭
 
 
@@ -45,7 +45,7 @@ void OV7670_Init()
   OV7670_Write_Reg(0x13, 0xf7);  // COM8: 更新设置，保持AGC/AEC使能
 
   // 图像尺寸和窗口设置
-  OV7670_Write_Reg(0x12, 0x14);  // COM7：YUV输出格式 QVGA, RGB格式
+  OV7670_Write_Reg(0x12, 0x14);  // COM7：输出格式 QVGA, RGB格式
   OV7670_Write_Reg(0x0c, 0x04);  // COM3: 缩放使能
   OV7670_Write_Reg(0x18, 0x4A);  // HSTOP:水平窗口结束位置高8位
   OV7670_Write_Reg(0x17, 0x22);  // HSTART: 水平窗口起始位置高8位
