@@ -213,15 +213,14 @@ int main(void)
       pixel = 0;
 
       while (pixel < 153600) {
-        if (VSYNC_IS_HIGH()) {
-          log_write(LOG_LEVEL_INFO, "Frame Ended Prematurely at pixel %lu", pixel);
-          break;
-        }
+        // if (VSYNC_IS_HIGH()) {
+        //   log_write(LOG_LEVEL_INFO, "Frame Ended Prematurely at pixel %lu", pixel);
+        //   break;
+        // }
         
         while(!PLK_IS_HIGH());
 
         value = GPIOC->IDR & 0xFF;
-        log_write(LOG_LEVEL_INFO, "get vallue 0x%02X", value);
         if (pixel%2) {
           data[0] = value;
         } else {
