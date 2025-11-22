@@ -41,7 +41,9 @@
 #define VSYNC_IS_HIGH() (HAL_GPIO_ReadPin(CAM_VSYNC_GPIO_Port, CAM_VSYNC_Pin) == GPIO_PIN_SET)
 #define VSYNC_IS_LOW()  (HAL_GPIO_ReadPin(CAM_VSYNC_GPIO_Port, CAM_VSYNC_Pin) == GPIO_PIN_RESET)
 #define HREF_IS_HIGH() (HAL_GPIO_ReadPin(CAM_HREF_GPIO_Port, CAM_HREF_Pin) == GPIO_PIN_SET)
+#define HREF_IS_LOW()  (HAL_GPIO_ReadPin(CAM_HREF_GPIO_Port, CAM_HREF_Pin) == GPIO_PIN_RESET)
 #define PLK_IS_HIGH() (HAL_GPIO_ReadPin(CAM_PLK_GPIO_Port, CAM_PLK_Pin) == GPIO_PIN_SET)
+#define PLK_IS_LOW() (HAL_GPIO_ReadPin(CAM_PLK_GPIO_Port, CAM_PLK_Pin) == GPIO_PIN_RESET)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -188,53 +190,58 @@ int main(void)
   uint8_t pid = OV7670_Read_Reg(0x0A);
   uint8_t ver = OV7670_Read_Reg(0x0B);
   log_write(LOG_LEVEL_INFO, "OV7670 Register PID:Ver Value: 0x%02X:0x%02X", pid, ver);
-
+  uint8_t com7 = OV7670_Read_Reg(0x12);
+  log_write(LOG_LEVEL_INFO, "OV7670 Register COM7 Value: 0x%02X", com7);
   OV7670_Init();
+  com7 = OV7670_Read_Reg(0x12);
+  log_write(LOG_LEVEL_INFO, "OV7670 Register COM7 Value after init: 0x%02X", com7);
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint32_t pixel;
-  uint8_t value;
-  uint8_t data[2] = {0, 0};
+  uint8_t high;
+  uint8_t low;
+  uint8_t line_buf[640] = {0};
+  uint16_t temp;
+
 
   while (1)
   {
 
-
     if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
       Blink_LED(1);
-      // 等待 VSYNC 变低，表示一帧数据开始
       LCD_Set_Window(0, 0, 319, 239);
       LCD_Send_Cmd(0x2c);
-      while(VSYNC_IS_HIGH());
-      log_write(LOG_LEVEL_INFO, "Frame Capturing");
-      pixel = 0;
+      LCD_CHIP_SELECT();
+      LCD_MODE_DATA();
+      // 等待 VSYNC 变低，表示一帧数据开始
+      while(VSYNC_IS_LOW());  // 0->1
+      while(VSYNC_IS_HIGH()); //1->0
 
-      while (pixel < 153600) {
-        // if (VSYNC_IS_HIGH()) {
-        //   log_write(LOG_LEVEL_INFO, "Frame Ended Prematurely at pixel %lu", pixel);
-        //   break;
-        // }
-        
-        while(!PLK_IS_HIGH());
+      for (uint16_t y = 0; y < 240; y++) {
+        while (HREF_IS_LOW()); // 0-> 1
 
-        value = GPIOC->IDR & 0xFF;
-        if (pixel%2) {
-          data[0] = value;
-        } else {
-          uint16_t v =ili9320_BGR2RGB(data[0] << 8 | value);
-          data[0] = (v >> 8) & 0xFF;
-          data[1] = v & 0xFF;
+        uint8_t *p = line_buf;
 
-          LCD_Send_Data(data, 2);
+        for (uint16_t x = 0; x < 320; x++) {
+          while(PLK_IS_LOW()); //0->1
+          // 读取两个字节
+          high = GPIOC->IDR & 0xFF;
+          *p++ = high;
+          while(PLK_IS_HIGH()); //1->0
+
+          while(PLK_IS_LOW()); //0->1
+          low = GPIOC->IDR & 0xFF;
+          *p++ = low;
+          while(PLK_IS_HIGH()); //1->0
         }
-        pixel++;
-        // while (PLK_IS_HIGH());
-
+        HAL_SPI_Transmit(&LCD_SPI_HANDLE, line_buf, 640);
+        while(HREF_IS_HIGH());
       }
-      
+
+      LCD_CHIP_UNSELECT();
     }
     
     HAL_Delay(10);  // 每秒发送一次
