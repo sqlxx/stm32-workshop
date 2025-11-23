@@ -19,7 +19,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stdio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -210,8 +209,8 @@ int main(void)
   while (1)
   {
 
-    if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
-      Blink_LED(1);
+    // if (Button_Clicked(B1_GPIO_Port, B1_Pin)) {
+      // Blink_LED(1);
       LCD_Set_Window(0, 0, 319, 239);
       LCD_Send_Cmd(0x2c);
       LCD_CHIP_SELECT();
@@ -227,24 +226,23 @@ int main(void)
 
         for (uint16_t x = 0; x < 320; x++) {
           while(PLK_IS_LOW()); //0->1
-          // 读取两个字节
           high = GPIOC->IDR & 0xFF;
-          *p++ = high;
           while(PLK_IS_HIGH()); //1->0
 
           while(PLK_IS_LOW()); //0->1
           low = GPIOC->IDR & 0xFF;
-          *p++ = low;
           while(PLK_IS_HIGH()); //1->0
+          *p++ = high;
+          *p++ = low;
+          // log_write(LOG_LEVEL_INFO, "0x%02X, 0x%02X", high, low);
         }
-        HAL_SPI_Transmit(&LCD_SPI_HANDLE, line_buf, 640);
+        HAL_SPI_Transmit(&LCD_SPI_HANDLE, line_buf, 640, 50);
         while(HREF_IS_HIGH());
       }
 
       LCD_CHIP_UNSELECT();
-    }
-    
-    HAL_Delay(10);  // 每秒发送一次
+    // }
+    // HAL_Delay(10);  
   }
     /* USER CODE END WHILE */
 
