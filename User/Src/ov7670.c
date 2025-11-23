@@ -23,7 +23,7 @@ uint8_t OV7670_Write_Reg(uint8_t reg, uint8_t value) {
 }
 
 const uint8_t ov7670_qvga_rgb565[][2] = {
-  //  {0x12, 0x14|0x02}, // COM7: QVGA, RGB output, no downsample, 0x02为测试彩条
+  //  {0x12, 0x14|0x02}, // COM7: QVGA, RGB output, no downsample, 0x02为测试彩条，需要与0x70与0x71的第7位配合工作
   {0x12, 0x14}, // COM7: QVGA, RGB output, no downsample, 0x02为测试彩条
   {0x40, 0xD0}, // COM15: RGB565 full range, D0
   {0x11, 0x03}, // CLKRC: 内部时钟分频
@@ -35,7 +35,7 @@ const uint8_t ov7670_qvga_rgb565[][2] = {
   // {0x70, 0x80| 0x3A}, //SCALING_XSC 第7位代表base颜色条，但如果第7位设成1，则会输出非常奇怪的图像，不是正常的彩条
   // {0x70, 0x3A|0x80}, //SCALING_XSC 第7位代表base颜色条
   // {0x71, 0x35|0x80}, //SCALING_YSC 默认值
-  {0x42, 0x08}, // 显示色彩条的关键
+  {0x42, 0x08}, // 显示DSP色彩条
 
   // {0x3e, 0x19}, //COM14 
   // {0x72, 0x11},
