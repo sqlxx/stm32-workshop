@@ -13,15 +13,5 @@
       "limits": "c",
       "cmath": "c",
       "type_traits": "c"
-    },
-    "vsmqtt.brokerProfiles": [
-      {
-        "name": "pet-prod",
-        "host": "47.98.153.33",
-        "port": 1883,
-        "clientId": "sq_client",
-        "password": "2T0DxwsohhikUm3YI0Vj",
-        "username": "admin"
-      }
-    ]
+    }
 }
